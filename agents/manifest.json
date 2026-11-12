@@ -1,0 +1,9 @@
+{
+  "name": "Deadly Alliance",
+  "short_name": "Deadly Alliance",
+  "start_url": "index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#07090a",
+  "theme_color": "#07090a"
+}
