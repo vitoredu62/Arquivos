@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07090a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
+  <title>Deadly Alliance</title>
+  <style>
+    :root{color-scheme:dark;--red:#c0211f;--panel:rgba(8,10,11,.82)}
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07090a;color:#eee;font:600 16px system-ui,sans-serif}canvas{display:block;position:fixed;inset:0}
+    #hud{position:fixed;inset:0;pointer-events:none}#cross{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3px;border:1px solid #fff;border-radius:50%;box-shadow:0 0 5px #000}
+    .panel{position:absolute;background:var(--panel);padding:11px 14px;border-radius:8px}.stats{left:16px;bottom:calc(16px + env(safe-area-inset-bottom));width:205px}.info{right:16px;top:calc(16px + env(safe-area-inset-top));text-align:right}.weapon{right:16px;bottom:calc(16px + env(safe-area-inset-bottom));text-align:right}#bar{height:10px;background:#333;border-radius:6px;margin-top:6px;overflow:hidden}#hp{height:100%;width:100%;background:var(--red);transition:width .2s}#message{position:absolute;top:16%;left:0;right:0;text-align:center;text-shadow:0 2px 6px #000;font-size:clamp(16px,3vw,22px)}
+    #overlay{position:fixed;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:rgba(4,5,5,.92);gap:10px}h1{font-size:clamp(38px,9vw,76px);letter-spacing:.1em;color:var(--red);margin:0;text-transform:uppercase}p{max-width:620px;line-height:1.55;color:#b8bfbd;margin:5px 0}button{border:0;border-radius:7px;background:var(--red);color:white;padding:13px 30px;font:700 17px system-ui;cursor:pointer}#attack{position:fixed;right:22px;bottom:95px;z-index:2;display:none;pointer-events:auto;touch-action:manipulation}
+  </style>
+</head>
+<body>
+  <div id="hud"><div id="cross"></div><div class="panel stats">❤ Vida <div id="bar"><div id="hp"></div></div></div><div class="panel info"><div id="area">COMPLEXO INFESTADO</div><small id="count"></small></div><div class="panel weapon"><div id="weapon">Pistola</div><small id="ammo">Munição: 12</small></div><div id="message"></div></div>
+  <button id="attack">ATACAR</button>
+  <div id="overlay"><h1 id="title">Deadly Alliance</h1><p id="desc">O surto tomou o complexo. Encontre Júlia, sobreviva aos infectados e abra caminho até a saída.</p><p><b>WASD</b> mover · <b>Shift</b> correr · <b>Mouse</b> olhar · <b>Clique/Espaço</b> atacar<br><b>1</b> pistola · <b>2</b> faca · <b>3</b> facão</p><button id="start">Jogar</button></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  (()=>{
+    const $=id=>document.getElementById(id), scene=new THREE.Scene();scene.background=new THREE.Color(0x080b0c);scene.fog=new THREE.Fog(0x080b0c,10,58);
+    const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,100);camera.position.set(0,1.7,5);
+    const renderer=new THREE.WebGLRenderer({antialias:false});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,.8));document.body.prepend(renderer.domElement);
+    scene.add(new THREE.HemisphereLight(0x9caec0,0x211810,1.2));const light=new THREE.DirectionalLight(0xffdfb0,1.3);light.position.set(-5,12,8);scene.add(light);
+    const mat=(c,e=0)=>new THREE.MeshLambertMaterial({color:c,emissive:e});
+    const cube=(w,h,d,c,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);scene.add(m);return m};
+    cube(40,.2,100,0x28251f,0,-.12,-42);cube(40,5,.5,0x343638,0,2.4,-92);cube(.5,5,100,0x303234,-20,2.4,-42);cube(.5,5,100,0x303234,20,2.4,-42);
+    for(let i=0;i<34;i++){const z=-Math.random()*86-3,x=(Math.random()-.5)*35,h=.5+Math.random()*1.7;cube(.7+Math.random(),h,.7+Math.random(),0x37332a,x,h/2,z)}
+    const zombies=[];function makeZombie(x,z){const g=new THREE.Group(),skin=mat(0x819078),shirt=mat([0x4d4640,0x394550,0x573a38][Math.floor(Math.random()*3)]);const body=new THREE.Mesh(new THREE.BoxGeometry(.52,.78,.3),shirt);body.position.y=1.02;g.add(body);const head=new THREE.Mesh(new THREE.BoxGeometry(.38,.4,.36),skin);head.position.y=1.65;g.add(head);for(const s of [-1,1]){const eye=new THREE.Mesh(new THREE.BoxGeometry(.07,.05,.03),mat(0xbb2218,0x661008));eye.position.set(s*.09,1.69,.19);g.add(eye);const leg=new THREE.Mesh(new THREE.BoxGeometry(.19,.62,.22),mat(0x30343a));leg.position.set(s*.14,.31,0);g.add(leg)}g.position.set(x,0,z);scene.add(g);zombies.push({g,hp:100,dead:false,cd:0,phase:Math.random()*5})}
+    for(let i=0;i<16;i++)makeZombie((Math.random()-.5)*32,-12-Math.random()*72);
+    const cageZ=-88;for(let i=-2;i<=2;i++){cube(.08,2.7,.08,0x858585,i*.65,1.35,cageZ-1.3);cube(.08,2.7,.08,0x858585,i*.65,1.35,cageZ+1.3)}for(const x of [-1.3,1.3])for(const z of [cageZ-1.3,cageZ+1.3])cube(.08,2.7,.08,0x858585,x,1.35,z);cube(2.7,.08,2.7,0x858585,0,2.7,cageZ);
+    const julia=new THREE.Group();const torso=new THREE.Mesh(new THREE.BoxGeometry(.48,.8,.28),mat(0xc34179));torso.position.y=1;julia.add(torso);const face=new THREE.Mesh(new THREE.SphereGeometry(.22,8,6),mat(0xf0c8a8));face.position.y=1.65;julia.add(face);julia.position.set(0,0,cageZ);scene.add(julia);
+    const gun=new THREE.Group();const gunBody=new THREE.Mesh(new THREE.BoxGeometry(.09,.13,.32),mat(0x25282a));gunBody.position.set(.28,-.25,-.48);camera.add(gun);gun.add(gunBody);
+    const keys={},clock=new THREE.Clock();let playing=false,hp=100,ammo=12,selected=0,yaw=0,pitch=0,attackCD=0;
+    const weapons=[{name:'Pistola',damage:50,range:32,cd:.4},{name:'Faca',damage:35,range:2.5,cd:.4},{name:'Facão',damage:75,range:3.2,cd:.8}];
+    const tell=t=>{$('message').textContent=t;clearTimeout(tell.timer);tell.timer=setTimeout(()=>$('message').textContent='',2500)};
+    function updateUI(){$('hp').style.width=hp+'%';$('ammo').textContent=selected===0?'Munição: '+ammo:'Corpo a corpo';$('weapon').textContent=weapons[selected].name;$('count').textContent='Infectados: '+zombies.filter(z=>!z.dead).length}
+    function setWeapon(n){selected=n;updateUI()}
+    function end(win){playing=false;document.exitPointerLock?.();$('title').textContent=win?'Vocês sobreviveram':'Você morreu';$('desc').textContent=win?'Você encontrou Júlia e escapou do complexo. A aliança venceu — por enquanto.':'Os infectados te alcançaram. Júlia ainda espera por você.';$('start').textContent='Jogar novamente';$('start').onclick=()=>location.reload();$('overlay').style.display='flex'}
+    function attack(){if(!playing||attackCD>0)return;const w=weapons[selected];attackCD=w.cd;if(selected===0){if(ammo<=0){tell('Sem munição!');return}ammo--}const dir=new THREE.Vector3();camera.getWorldDirection(dir);let target=null,best=w.range;const ray=new THREE.Raycaster(camera.position,dir,0,w.range);for(const z of zombies){if(z.dead)continue;const v=z.g.position.clone().add(new THREE.Vector3(0,1.2,0)).sub(camera.position),d=v.length();if(d>best||v.normalize().dot(dir)<(selected===0?.97:.55))continue;if(ray.intersectObject(z.g,true).length){target=z;best=d}}if(target){target.hp-=w.damage;if(target.hp<=0){target.dead=true;scene.remove(target.g);tell('Infectado eliminado')}else tell('Acertou!')}updateUI()}
+    addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){e.preventDefault();attack()}if(e.code==='Digit1')setWeapon(0);if(e.code==='Digit2')setWeapon(1);if(e.code==='Digit3')setWeapon(2)});addEventListener('keyup',e=>keys[e.code]=false);
+    addEventListener('mousemove',e=>{if(playing&&(document.pointerLockElement||matchMedia('(pointer:coarse)').matches)){yaw-=e.movementX*.002;pitch=Math.max(-1.35,Math.min(1.35,pitch-e.movementY*.002))}});
+    renderer.domElement.addEventListener('click',()=>{if(playing&&!matchMedia('(pointer:coarse)').matches)renderer.domElement.requestPointerLock?.();attack()});$('attack').addEventListener('pointerdown',e=>{e.preventDefault();attack()});
+    $('start').onclick=()=>{$('overlay').style.display='none';playing=true;$('attack').style.display='block';renderer.domElement.requestPointerLock?.();tell('Avance pelo complexo e elimine os infectados.');updateUI()};
+    addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+    function loop(){requestAnimationFrame(loop);const dt=Math.min(clock.getDelta(),.05);if(playing){attackCD=Math.max(0,attackCD-dt);const speed=(keys.ShiftLeft?7:4)*dt,forward=(keys.KeyW?1:0)-(keys.KeyS?1:0),side=(keys.KeyD?1:0)-(keys.KeyA?1:0);camera.position.x+=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*speed;camera.position.z+=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*speed;camera.position.x=Math.max(-18,Math.min(18,camera.position.x));camera.position.z=Math.max(-90,Math.min(4,camera.position.z));camera.rotation.set(pitch,yaw,0,'YXZ');
+      for(const z of zombies){if(z.dead)continue;z.cd-=dt;z.phase+=dt*5;const dx=camera.position.x-z.g.position.x,dz=camera.position.z-z.g.position.z,d=Math.hypot(dx,dz);if(d<24){z.g.rotation.y=Math.atan2(dx,dz);if(d>1.25){z.g.position.x+=dx/d*dt*1.35;z.g.position.z+=dz/d*dt*1.35;z.g.position.y=Math.sin(z.phase)*.025}else if(z.cd<=0){z.cd=1.1;hp=Math.max(0,hp-10);tell('Você foi ferido!');$('hp').style.width=hp+'%';if(hp<=0)end(false)}}}
+      if(camera.position.distanceTo(julia.position)<4){if(zombies.every(z=>z.dead)){tell('Júlia está livre! Vocês sobreviveram.');end(true)}else if(Math.random()<.012)tell('A jaula está trancada. Elimine os infectados!')}
+      updateUI();}renderer.render(scene,camera)}loop();
+  })();
+  </script>
+  <script>if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('./sw.js').catch(()=>{});</script>
+</body>
+</html>
